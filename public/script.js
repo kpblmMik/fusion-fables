@@ -13,6 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Redirect to the game page with the player name as a query parameter
-        window.location.href = `game.html?name=${encodeURIComponent(playerName)}`;
+        window.open(`game.html?name=${encodeURIComponent(playerName)}`, "_blank");
     });
 });
