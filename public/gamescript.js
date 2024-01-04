@@ -1,24 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
     // Retrieve the player name from the cookie
     const playerName = Cookies.get('playerName');
-
-    // Check if the player name is available
     if (!playerName) {
         alert("Player name is missing. Redirecting to the main page.");
         window.location.href = "index.html";
     }
 
-    // Update the welcome message
     const welcomeMessage = document.getElementById('welcomeMessage');
     welcomeMessage.textContent = `Greetings, ${playerName}!`;
 
-    // Initialize socket connection
     const socket = io('http://localhost:8080');
-
-    // DOM elements
     const input = document.getElementById('chat-input');
     const button = document.getElementById('submit');
     const messages = document.getElementById('messages');
+    const playerCountContainer = document.getElementById('playerCountContainer');
+    const playerCountElement = document.getElementById('playerCount');
 
     // Event listener for the Submit button
     button.onclick = () => {
@@ -33,8 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event listener for receiving messages from the server
     socket.on("message", (data) => {
         console.log('Message:', data);
-
-        // Display the message with the player name
         messages.innerHTML += `<li>${data.playerName}: ${data.message}</li>`;
+    });
+    // Event listener for receiving player count from the server
+    socket.on("playerCount", (count) => {
+        playerCountElement.textContent = `Players Online: ${count}`;
     });
 });

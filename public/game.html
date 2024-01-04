@@ -9,6 +9,10 @@
 <body>
   <div class="container">
     <h1 id="welcomeMessage">Greetings!</h1>
+<div class="container" id="playerCountContainer">
+  <p id="playerCount">Players Online: Loading...</p>
+</div>
+
     <div class="container messages" id="messages">
         Story
     </div>
@@ -16,6 +20,7 @@
         <input type="text" name="" id="chat-input" placeholder="Type your sentence">
         <button id="submit">Submit</button>
     </div>
+    <button id="StartGameButton">Start Game</button>
     <button id="FinishButton">Finish Game</button>
   </div>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"

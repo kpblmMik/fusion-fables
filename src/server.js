@@ -13,11 +13,13 @@ io.on("connection", (socket) => {
     
     playerCount++; // Increment player count on each connection
     console.log("Player Count:", playerCount);
+    io.emit("playerCount", playerCount);
 
     socket.on("disconnect", () => {
         console.log("user disconnected");
         playerCount--; // Decrement player count on each disconnection
         console.log("Player Count:", playerCount);
+        io.emit("playerCount", playerCount);
     });
 
     socket.on("message", (message) => {
