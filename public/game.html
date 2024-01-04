@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Game Session</h1>
+    <h1 id="welcomeMessage">Greetings!</h1>
     <div class="container messages" id="messages">
         Story
     </div>
@@ -16,11 +16,13 @@
         <input type="text" name="" id="chat-input" placeholder="Type your sentence">
         <button id="submit">Submit</button>
     </div>
-    <button id="startFinishButton">Start Game</button>
+    <button id="FinishButton">Finish Game</button>
   </div>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"
   integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz"
   crossorigin="anonymous"></script>
   <script src="gamescript.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+
 </body>
 </html>

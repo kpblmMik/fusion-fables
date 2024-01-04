@@ -16,9 +16,12 @@
       <li>You can only see the last sentence contributed by the previous player.</li>
       <li>Decide to finish the story when everyone is ready.</li>
     </ul>
-    <input type="text" id="playerName" placeholder="Enter Your Name">
-    <button id="startButton">Start Game</button>
+    <form id="playerForm">
+      <input type="text" id="playerName" placeholder="Enter Your Name">
+      <button type="button" id="startButton">Enter</button>
+    </form>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
   <script src="script.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"
   integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz"
