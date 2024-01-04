@@ -15,24 +15,71 @@ document.addEventListener("DOMContentLoaded", () => {
     const messages = document.getElementById('messages');
     const playerCountContainer = document.getElementById('playerCountContainer');
     const playerCountElement = document.getElementById('playerCount');
+    const startButton = document.getElementById('StartGameButton');
 
-    // Event listener for the Submit button
+    let playerTurn = 0;
+
     button.onclick = () => {
         const message = input.value.trim();
         if (message !== "") {
-            // Emit the message along with the player name to the server
-            socket.emit("message", { playerName, message });
-            input.value = "";
+            // Only allow the current player to submit a message
+            if (playerTurn === socket.id) {
+                socket.emit("message", { playerName, message });
+                input.value = "";
+                // Notify the server that the current player's turn is over
+                socket.emit("endTurn");
+            } else {
+                alert("It's not your turn!");
+            }
         }
     };
 
-    // Event listener for receiving messages from the server
+    startButton.onclick = () => {
+        // Emit a signal to the server to start the game
+        socket.emit("startGame");
+    };
+
+    socket.on("deactivateStartButton", () => {
+        startButton.disabled = true;
+    });
+
     socket.on("message", (data) => {
         console.log('Message:', data);
         messages.innerHTML += `<li>${data.playerName}: ${data.message}</li>`;
     });
+
+    // Event listener for receiving player count from the server
+    socket.on("playerCount", (count) => {
+
+    });
+
+    // Event listener for receiving turn information from the server
+    socket.on("turnUpdate", (turn) => {
+        playerTurn = turn;
+        if (turn === socket.id) {
+            alert("It's your turn!");
+            // Enable the chat input and submit button for the current player
+            input.disabled = false;
+            button.disabled = false;
+            startButton.disabled = true; // Disable the "Start Game" button during the game
+        } else {
+            // Disable the chat input and submit button for other players
+            input.disabled = true;
+            button.disabled = true;
+            startButton.disabled = true; // Disable the "Start Game" button for non-current players
+        }
+    });
     // Event listener for receiving player count from the server
     socket.on("playerCount", (count) => {
         playerCountElement.textContent = `Players Online: ${count}`;
+    });
+    // Event listener for deactivating the "Start Game" button on all clients
+    socket.on("deactivateStartButton", () => {
+        startButton.disabled = true;
+    });
+    // Event listener for displaying an alert on the client
+    socket.on("alert", (message) => {
+        alert(message);
+        startButton.disabled = false;
     });
 });
