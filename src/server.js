@@ -26,10 +26,10 @@ io.on("connection", (socket) => {
         console.log("Received startGame signal");
         if (playerCount >= 3 && !isInGame) {
             console.log("Starting the game");
+            io.emit("systemMessage", "GAME STARTED");
             io.emit("turnUpdate", connectedClients[0]);
             io.emit("deactivateStartButton");
             isInGame = true;
-            // Notify all clients that the game has started
             io.emit("gameStart");
         } else {
             console.log("Not enough players or game is already in progress");
@@ -49,6 +49,7 @@ io.on("connection", (socket) => {
         if (isInGame) {
             console.log("Finishing the game");
             isInGame = false;
+            io.emit("systemMessage", "THE END");
             io.emit("gameFinish");
             // Notify all clients that the game has finished
             io.emit("enableSubmit");

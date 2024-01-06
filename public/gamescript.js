@@ -42,6 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
         socket.emit("startGame");
     };
 
+    socket.on("gameStart", () => {
+        isInGame = true;
+    });
+
     finishButton.onclick = () => {
         // Emit a signal to the server to finish the game
         socket.emit("finishGame");
@@ -53,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.on("activateStartButton", () => {
         startButton.disabled = false;
-    });    
+    });
 
     socket.on("message", (data) => {
         console.log('Message:', data);
@@ -82,16 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Event listener for receiving game start signal
-    socket.on("gameStart", () => {
-        isInGame = true;
-        alert("The game has started!");
+    socket.on("systemMessage", (message) => {
+        messages.innerHTML += `<li class="system-message">${message}</li>`;
     });
 
     // Event listener for receiving game finish signal
     socket.on("gameFinish", () => {
         isInGame = false;
-        alert("The game has finished! You can start a new round.");
         socket.emit("activateStartButton");
         // Enable the chat input and submit button for free chat after finishing the game
         input.disabled = false;
