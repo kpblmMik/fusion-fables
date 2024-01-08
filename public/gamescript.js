@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById('chat-input');
     const button = document.getElementById('submit');
     const messages = document.getElementById('messages');
-    const playerCountContainer = document.getElementById('playerCountContainer');
     const playerCountElement = document.getElementById('playerCount');
     const startButton = document.getElementById('StartGameButton');
     const finishButton = document.getElementById('FinishGameButton');
@@ -67,15 +66,15 @@ document.addEventListener("DOMContentLoaded", () => {
     
         if (isInGame) {
             if (isMessageFromCurrentPlayer) {
-                messages.innerHTML += `<li>${playerName}: ${message}</li>`;
+                messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
             } else {
                 // Mask the message from other players with stars
                 const maskedMessage = Array(message.length + 1).join('*');
-                messages.innerHTML += `<li>${playerName}: ${maskedMessage}</li>`;
+                messages.innerHTML += `<li><strong>${playerName}:</strong> ${maskedMessage}</li>`;
             }
         } else {
             // If not in game, display all messages without masking
-            messages.innerHTML += `<li>${playerName}: ${message}</li>`;
+            messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
         }
     });
     
@@ -89,7 +88,11 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.on("turnUpdate", (turn) => {
         playerTurn = turn;
         if (turn === socket.id) {
-            alert("It's your turn!");
+            const alertContainer = document.createElement("div");
+            alertContainer.className = "alert alert-info fade show fixed-top";
+            alertContainer.innerHTML = "It's your turn!";
+            alertContainer.setAttribute("data-bs-dismiss", "alert");
+            document.body.appendChild(alertContainer);
             // In-game button/input rules
             input.disabled = false;
             button.disabled = false;
@@ -102,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     socket.on("systemMessage", (message) => {
-        messages.innerHTML += `<li class="system-message">${message}</li>`;
+        messages.innerHTML += `<li class="system-message"><strong>${message}</li></strong>`;
     });
 
     // Event listener for receiving game finish signal
