@@ -59,20 +59,26 @@ document.addEventListener("DOMContentLoaded", () => {
         startButton.disabled = false;
     });
 
-socket.on("message", (data) => {
-    const { playerName, message, senderSocketId } = data;
-
-    // Check if the message sender is the current player
-    const isMessageFromCurrentPlayer = senderSocketId === socket.id;
-
-    if (isMessageFromCurrentPlayer) {
-        messages.innerHTML += `<li>${playerName}: ${message}</li>`;
-    } else {
-        // Mask the message from other players with stars
-        const maskedMessage = Array(message.length + 1).join('*');
-        messages.innerHTML += `<li>${playerName}: ${maskedMessage}</li>`;
-    }
-});
+    socket.on("message", (data) => {
+        const { playerName, message, senderSocketId } = data;
+    
+        // Check if the message sender is the current player
+        const isMessageFromCurrentPlayer = senderSocketId === socket.id;
+    
+        if (isInGame) {
+            if (isMessageFromCurrentPlayer) {
+                messages.innerHTML += `<li>${playerName}: ${message}</li>`;
+            } else {
+                // Mask the message from other players with stars
+                const maskedMessage = Array(message.length + 1).join('*');
+                messages.innerHTML += `<li>${playerName}: ${maskedMessage}</li>`;
+            }
+        } else {
+            // If not in game, display all messages without masking
+            messages.innerHTML += `<li>${playerName}: ${message}</li>`;
+        }
+    });
+    
 
     // Event listener for receiving player count from the server
     socket.on("playerCount", (count) => {
