@@ -6,9 +6,44 @@ const io = new Server({
     }
 });
 
+const gameBeginnings = [
+    "Once upon a time in a magical land,",
+    "In the year 3025, on a distant planet,",
+    "Amidst the bustling streets of a futuristic city,",
+    "Deep in the heart of the enchanted forest,",
+    "On a starship traveling through the cosmos,",
+    "In a world where time travel was possible,",
+    "In a parallel universe where cats ruled the world,",
+    "On the moon, where a colony of space-faring penguins held their annual talent show,",
+    "In the laboratory of a mad scientist creating musical vegetables,",
+    "Within the pages of a living book that told its own stories,",
+    "At the edge of the universe, where a lonely asteroid hosted an intergalactic party,",
+    "In a steampunk city where clockwork robots served afternoon tea,",
+    "At the top of a beanstalk, where a surprisingly modern coffee shop catered to giants and fairies alike,",
+    "In a desert where mirages were portals to whimsical dimensions,",
+    "Within the dreams of a child with the ability to bring their fantasies to life,",
+    "On an island where pirates traded treasures for laughter instead of gold,",
+    "In a village where every resident had a superpower, but only used it for mundane tasks,",
+    "At the bottom of the ocean, where fish attended an underwater comedy club,",
+    "On a cloud where a celestial game of charades entertained the gods,",
+    "In a haunted mansion where ghosts hosted a yearly costume party,",
+    "On a rainbow bridge connecting realms, where creatures swapped stories during their daily commute,",
+    "In a dimension where math equations came to life and threw calculus-themed parties,",
+    "At a carnival on Mars, where aliens marveled at Earth-themed roller coasters,",
+    "In a secret garden where flowers whispered tales of their past lives,",
+    "Within a giant snow globe, where snowmen had animated conversations when shaken,"
+]
+
+
 let playerCount = 0; // Track the number of connected players
 let connectedClients = []; // Maintain an array of connected clients
 let isInGame = false;
+
+function getRandomBeginning() {
+    const randomIndex = Math.floor(Math.random() * gameBeginnings.length);
+    return gameBeginnings[randomIndex];
+}
+
 
 io.on("connection", (socket) => {
     console.log("a user connected", socket.id);
@@ -26,13 +61,17 @@ io.on("connection", (socket) => {
         console.log("Received startGame signal");
         if (playerCount >= 3 && !isInGame) {
             console.log("Starting the game");
-            io.emit("systemMessage", "GAME STARTED");
+    
+            const randomBeginning = getRandomBeginning();
+    
+            io.emit("systemMessage", "GAME STARTED!");
+            io.emit("systemMessage", randomBeginning);
             io.emit("turnUpdate", connectedClients[0]);
             io.emit("deactivateStartButton");
             isInGame = true;
             io.emit("gameStart");
         } else {
-            console.log("Not enough players or game is already in progress");
+            console.log("Not enough players or the game is already in progress");
             socket.emit("alert", "Not enough players or the game is already in progress.");
         }
     });
@@ -51,7 +90,6 @@ io.on("connection", (socket) => {
             isInGame = false;
             io.emit("systemMessage", "THE END");
             io.emit("gameFinish");
-            // Notify all clients that the game has finished
             io.emit("enableSubmit");
         }
     });

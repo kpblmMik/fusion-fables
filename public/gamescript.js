@@ -74,15 +74,14 @@ document.addEventListener("DOMContentLoaded", () => {
         playerTurn = turn;
         if (turn === socket.id) {
             alert("It's your turn!");
-            // Enable the chat input and submit button for the current player
+            // In-game button/input rules
             input.disabled = false;
             button.disabled = false;
-            startButton.disabled = true; // Disable the "Start Game" button during the game
+            startButton.disabled = true;
         } else {
-            // Disable the chat input and submit button for other players
             input.disabled = true;
             button.disabled = true;
-            startButton.disabled = true; // Disable the "Start Game" button for non-current players
+            startButton.disabled = true;
         }
     });
 
@@ -94,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.on("gameFinish", () => {
         isInGame = false;
         socket.emit("activateStartButton");
-        // Enable the chat input and submit button for free chat after finishing the game
         input.disabled = false;
         button.disabled = false;
     });
