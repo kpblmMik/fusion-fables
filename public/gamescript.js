@@ -59,10 +59,20 @@ document.addEventListener("DOMContentLoaded", () => {
         startButton.disabled = false;
     });
 
-    socket.on("message", (data) => {
-        console.log('Message:', data);
-        messages.innerHTML += `<li>${data.playerName}: ${data.message}</li>`;
-    });
+socket.on("message", (data) => {
+    const { playerName, message, senderSocketId } = data;
+
+    // Check if the message sender is the current player
+    const isMessageFromCurrentPlayer = senderSocketId === socket.id;
+
+    if (isMessageFromCurrentPlayer) {
+        messages.innerHTML += `<li>${playerName}: ${message}</li>`;
+    } else {
+        // Mask the message from other players with stars
+        const maskedMessage = Array(message.length + 1).join('*');
+        messages.innerHTML += `<li>${playerName}: ${maskedMessage}</li>`;
+    }
+});
 
     // Event listener for receiving player count from the server
     socket.on("playerCount", (count) => {

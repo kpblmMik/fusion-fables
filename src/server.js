@@ -112,9 +112,10 @@ io.on("connection", (socket) => {
         io.emit("playerCount", playerCount);
     });
 
-    socket.on("message", (message) => {
-        console.log("message", message);
-        io.emit("message", message);
+    socket.on("message", (data) => {
+        const { playerName, message } = data;
+        const senderSocketId = socket.id;
+        io.emit("message", { playerName, message, senderSocketId });
     });
 
     // Event listener for deactivating the "Start Game" button on all clients
