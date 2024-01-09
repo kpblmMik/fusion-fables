@@ -68,6 +68,11 @@ document.addEventListener("DOMContentLoaded", () => {
         startButton.disabled = false;
     });
 
+    function scrollToBottom() {
+        const chatContainer = document.getElementById('messages');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
     socket.on("message", (data) => {
         const { playerName, message, senderSocketId } = data;
 
@@ -76,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isMessageFromCurrentPlayer) {
             // Display messages from the current player as coming from "You"
-            messages.innerHTML += `<li><strong>You:</strong> ${message}</li>`;
+            messages.innerHTML += `<li class="lead"><strong>You:</strong> ${message}</li>`;
         } else if (isInGame) {
             // Calculate the index of the previous player in the connectedClients array
             const previousPlayerIndex = (playerIndex - 1 + connectedClients.length) % connectedClients.length;
@@ -85,16 +90,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (isMessageFromPreviousPlayer) {
                 // Display messages from the previous player without masking
-                messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
+                messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${message}</li>`;
             } else {
                 // Mask the message from other players with stars
                 const maskedMessage = Array(message.length + 1).join('*');
-                messages.innerHTML += `<li><strong>${playerName}:</strong> ${maskedMessage}</li>`;
+                messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${maskedMessage}</li>`;
             }
         } else {
             // If not in game, display all messages without masking
-            messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
+            messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${message}</li>`;
         }
+        scrollToBottom();
     });
     
 
@@ -134,12 +140,14 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.on('displayStoredMessages', (storedMessages) => {
 
         storedMessages.forEach(({ playerName, message }) => {
-            messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
+            messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${message}</li>`;
         });
+        scrollToBottom();
     });
 
     socket.on("systemMessage", (message) => {
-        messages.innerHTML += `<li class="system-message"><strong>${message}</li></strong>`;
+        messages.innerHTML += `<li class="system-message lead"><strong>${message}</li></strong>`;
+        scrollToBottom();
     });
 
     // Event listener for receiving game finish signal

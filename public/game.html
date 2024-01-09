@@ -10,9 +10,30 @@
 
   <title>Fusion Fables</title>
 </head>
-
-<body>
-  <div class="container mt-5">
+<body class="container bg-light">
+  <nav class="navbar navbar-expand-lg navbar-light bg-light ">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">Fusion Fables</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="about.html">About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#projects">Other Projects</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#contacts">Gallery</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="bg-white card rounded-3 mx-auto my-3 p-3" style="width: 550px">
     <h1 id="welcomeMessage">Greetings!</h1>
     <div class="container mb-4">
       <p class="lead">Let's wait for other players to join, you can start the game once there is at least 3 players
@@ -21,15 +42,23 @@
     </div>
 
     <div class="container-lg rounded overflow-auto list-unstyled" id="messages">
-      <h5>Feel free to chat before the game starts</h5>
+      <p class="lead">Feel free to chat before the game starts</p>
     </div>
     <div class="container input mb-3">
-      <input type="text" class="form-control" name="" id="chat-input" placeholder="Type your sentence">
+      <input type="text" class="form-control mb-3 " name="" id="chat-input" placeholder="Say something">
+      <button class="btn btn-primary" id="submit">Submit</button>
+      <button class="btn btn-success" id="StartGameButton">Start Game</button>
+      <button class="btn btn-danger" id="FinishGameButton">Finish Game</button>
     </div>
-    <button class="btn btn-primary" id="submit">Submit</button>
-    <button class="btn btn-success" id="StartGameButton">Start Game</button>
-    <button class="btn btn-danger" id="FinishGameButton">Finish Game</button>
   </div>
+  <footer class="footer mt-auto py-3 bg-light">
+    <div class="container text-center">
+        <a href="https://twitter.com/TweetsOfCats" class="text-dark me-3">Twitter</a>
+        <a href="https://www.linkedin.com/company/cats" class="text-dark me-3">LinkedIn</a>
+        <a href="https://github.com/kpblmMik/fusion-fables" class="text-dark">GitHub</a>
+
+    </div>
+  </footer>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"
     integrity="sha384-mZLF4UVrpi/QTWPA7BjNPEnkIfRFn4ZEO3Qt/HFklTJBj/gBOV8G3HcKn4NfQblz"
     crossorigin="anonymous"></script>
