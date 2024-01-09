@@ -38,6 +38,7 @@ const gameBeginnings = [
 let playerCount = 0; // Track the number of connected players
 let connectedClients = []; // Maintain an array of connected clients
 let isInGame = false;
+let storedMessages = [];
 
 function getRandomBeginning() {
     const randomIndex = Math.floor(Math.random() * gameBeginnings.length);
@@ -85,40 +86,55 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("finishGame", () => {
-        if (isInGame) {
-            console.log("Finishing the game");
-            isInGame = false;
-            io.emit("systemMessage", "THE END");
-            io.emit("gameFinish");
-            io.emit("enableSubmit");
-        }
-    });
-
+    
     socket.on("disconnect", () => {
         console.log("user disconnected");
-
+        
         // Remove the disconnected client from the array
         connectedClients = connectedClients.filter((client) => client !== socket.id);
-
+        
         playerCount--;
-
+        
         // If a player leaves during their turn, update the turn to the next player
         if (socket.id === connectedClients[0] && isInGame) {
             io.emit("turnUpdate", connectedClients[1]);
         }
-
+        
         console.log("Player Count:", playerCount);
         // Broadcast the updated player count to all clients
         io.emit("playerCount", playerCount);
         io.emit("connectedClients", connectedClients);
-
+        
     });
-
+    
     socket.on("message", (data) => {
         const { playerName, message } = data;
+        if (isInGame) {
+            // Append the message to the array
+            const newMessage = { playerName, message };
+            storedMessages.push(newMessage);
+            console.log('Stored Messages:', storedMessages);
+        }
         const senderSocketId = socket.id;
         io.emit("message", { playerName, message, senderSocketId });
+    });
+    
+    socket.on('finishGame', () => {
+        if (isInGame) {
+            console.log("Finishing the game");
+            isInGame = false;
+    
+            // Emit a system message and finish game signal
+            io.emit("systemMessage", "THE END");
+            io.emit("gameFinish");
+            io.emit("enableSubmit");
+    
+            // Emit a signal with the stored messages
+            io.emit('displayStoredMessages', storedMessages);
+    
+            // Clear the stored messages for the next game
+            storedMessages = [];
+        }
     });
 
     // Event listener for deactivating the "Start Game" button on all clients

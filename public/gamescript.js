@@ -130,6 +130,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Event listener for displaying stored messages
+    socket.on('displayStoredMessages', (storedMessages) => {
+
+        storedMessages.forEach(({ playerName, message }) => {
+            messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
+        });
+    });
+
     socket.on("systemMessage", (message) => {
         messages.innerHTML += `<li class="system-message"><strong>${message}</li></strong>`;
     });
