@@ -104,18 +104,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Event listener for receiving turn information from the server
+
     socket.on("turnUpdate", (turn) => {
         playerTurn = turn;
         if (turn === socket.id) {
             const alertContainer = document.createElement("div");
             alertContainer.className = "alert alert-info fade show fixed-top";
             alertContainer.innerHTML = "It's your turn!";
-            alertContainer.setAttribute("data-bs-dismiss", "alert");
+    
             document.body.appendChild(alertContainer);
+    
             // In-game button/input rules
             input.disabled = false;
             button.disabled = false;
             startButton.disabled = true;
+    
+            // Event listener for submit button to close the "It's your turn!" alert
+            document.getElementById("submit").addEventListener("click", () => {
+                alertContainer.remove(); // Use the remove() method
+            });
         } else {
             input.disabled = true;
             button.disabled = true;
