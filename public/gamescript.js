@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let playerTurn = 0;
     let isInGame = false;
+    let connectedClients = [];
 
     button.onclick = () => {
         const message = input.value.trim();
@@ -50,6 +51,11 @@ document.addEventListener("DOMContentLoaded", () => {
         socket.emit("finishGame");
     };
 
+    // Event listener for receiving connected clients from the server
+    socket.on("connectedClients", (clients) => {
+        connectedClients = clients;
+    });
+
     socket.on("deactivateStartButton", () => {
         startButton.disabled = true;
     });
@@ -63,9 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
     
         // Check if the message sender is the current player
         const isMessageFromCurrentPlayer = senderSocketId === socket.id;
-    
+        const isMessageFromPreviousPlayer = connectedClients[connectedClients.length - 1] === senderSocketId;    
         if (isInGame) {
-            if (isMessageFromCurrentPlayer) {
+            if (isMessageFromCurrentPlayer || isMessageFromPreviousPlayer) {      //  
                 messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
             } else {
                 // Mask the message from other players with stars

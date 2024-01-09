@@ -56,6 +56,7 @@ io.on("connection", (socket) => {
 
     // Broadcast the updated player count to all clients
     io.emit("playerCount", playerCount);
+    io.emit("connectedClients", connectedClients);
 
     socket.on("startGame", () => {
         console.log("Received startGame signal");
@@ -110,6 +111,8 @@ io.on("connection", (socket) => {
         console.log("Player Count:", playerCount);
         // Broadcast the updated player count to all clients
         io.emit("playerCount", playerCount);
+        io.emit("connectedClients", connectedClients);
+
     });
 
     socket.on("message", (data) => {
