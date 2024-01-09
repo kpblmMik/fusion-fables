@@ -70,14 +70,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.on("message", (data) => {
         const { playerName, message, senderSocketId } = data;
-    
+
         // Check if the message sender is the current player
         const isMessageFromCurrentPlayer = senderSocketId === socket.id;
-        const previousPlayerIndex = (playerIndex - 1 + connectedClients.length) % connectedClients.length;
-        const isMessageFromPreviousPlayer = senderSocketId === connectedClients[previousPlayerIndex];
 
-        if (isInGame) {
-            if (isMessageFromCurrentPlayer || isMessageFromPreviousPlayer) {      //  
+        if (isMessageFromCurrentPlayer) {
+            // Display messages from the current player as coming from "You"
+            messages.innerHTML += `<li><strong>You:</strong> ${message}</li>`;
+        } else if (isInGame) {
+            // Calculate the index of the previous player in the connectedClients array
+            const previousPlayerIndex = (playerIndex - 1 + connectedClients.length) % connectedClients.length;
+            // Check if the message sender is the previous player in the list
+            const isMessageFromPreviousPlayer = senderSocketId === connectedClients[previousPlayerIndex];
+
+            if (isMessageFromPreviousPlayer) {
+                // Display messages from the previous player without masking
                 messages.innerHTML += `<li><strong>${playerName}:</strong> ${message}</li>`;
             } else {
                 // Mask the message from other players with stars
