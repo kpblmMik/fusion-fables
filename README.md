@@ -1,6 +1,23 @@
 # fusion-fables
 
-npm install express http cookie-parser socket.io
+# deployment on amazon linux 2023
+# Install Git
+sudo dnf install git
 
+# Clone the repository from GitHub
+git clone https://github.com/kpblmMik/fusion-fables.git
 
-node --env-file=dev.env src/server.js
+# Update system packages
+sudo dnf update
+
+# Install Node.js
+sudo dnf install nodejs
+
+# Navigate into the project directory
+cd fusion-fables
+
+# Install project dependencies using npm
+npm install
+
+# Start the application
+npm start
