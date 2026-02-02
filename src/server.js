@@ -8,22 +8,20 @@ import { dirname, join } from "path";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Initialize Express app
-const app = express();
-const httpServer = createServer(app);
+// Input validation helper - exported for testing
+export function validateMessage(data) {
+    if (!data || typeof data !== "object") return null;
+    const { playerName, message } = data;
+    if (typeof playerName !== "string" || typeof message !== "string") return null;
+    // Sanitize and limit length
+    const sanitizedName = playerName.trim().slice(0, 50);
+    const sanitizedMessage = message.trim().slice(0, 500);
+    if (!sanitizedName || !sanitizedMessage) return null;
+    return { playerName: sanitizedName, message: sanitizedMessage };
+}
 
-// Serve static files from public directory
-app.use(express.static(join(__dirname, "../public")));
-
-// Initialize Socket.IO with CORS configuration
-const io = new Server(httpServer, {
-    cors: {
-        origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
-        methods: ["GET", "POST"]
-    }
-});
-
-const gameBeginnings = [
+// Story prompts - exported for testing
+export const gameBeginnings = [
     "Once upon a time in a magical land,",
     "In the year 3025, on a distant planet,",
     "Amidst the bustling streets of a futuristic city,",
@@ -51,177 +49,216 @@ const gameBeginnings = [
     "Within a giant snow globe, where snowmen had animated conversations when shaken,"
 ];
 
-// Game state
-let connectedClients = [];
-let isInGame = false;
-let storedMessages = [];
-let currentTurnIndex = 0;
+// Factory function to create a game server - exported for testing
+export function createGameServer(options = {}) {
+    const app = express();
+    const httpServer = createServer(app);
 
-function getRandomBeginning() {
-    const randomIndex = Math.floor(Math.random() * gameBeginnings.length);
-    return gameBeginnings[randomIndex];
-}
+    // Serve static files from public directory (skip in test mode)
+    if (!options.testMode) {
+        app.use(express.static(join(__dirname, "../public")));
+    }
 
-function getPlayerCount() {
-    return connectedClients.length;
-}
-
-// Input validation helper
-function validateMessage(data) {
-    if (!data || typeof data !== "object") return null;
-    const { playerName, message } = data;
-    if (typeof playerName !== "string" || typeof message !== "string") return null;
-    // Sanitize and limit length
-    const sanitizedName = playerName.trim().slice(0, 50);
-    const sanitizedMessage = message.trim().slice(0, 500);
-    if (!sanitizedName || !sanitizedMessage) return null;
-    return { playerName: sanitizedName, message: sanitizedMessage };
-}
-
-io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
-
-    // Add the newly connected client to the array
-    connectedClients.push(socket.id);
-
-    // Broadcast the updated player count to all clients
-    io.emit("playerCount", getPlayerCount());
-    io.emit("connectedClients", connectedClients);
-
-    socket.on("startGame", () => {
-        console.log("Received startGame signal");
-        if (getPlayerCount() >= 3 && !isInGame) {
-            console.log("Starting the game");
-
-            const randomBeginning = getRandomBeginning();
-            currentTurnIndex = 0;
-
-            io.emit("systemMessage", "GAME STARTED!");
-            io.emit("systemMessage", randomBeginning);
-            io.emit("turnUpdate", connectedClients[currentTurnIndex]);
-            io.emit("deactivateStartButton");
-            isInGame = true;
-            io.emit("gameStart");
-        } else {
-            console.log("Not enough players or the game is already in progress");
-            socket.emit("alert", "Not enough players (need 3+) or the game is already in progress.");
+    // Initialize Socket.IO with CORS configuration
+    const io = new Server(httpServer, {
+        cors: {
+            origin: options.corsOrigin || process.env.ALLOWED_ORIGINS?.split(",") || "*",
+            methods: ["GET", "POST"]
         }
     });
 
-    socket.on("endTurn", () => {
-        if (isInGame && connectedClients.length > 0) {
-            currentTurnIndex = (currentTurnIndex + 1) % connectedClients.length;
-            io.emit("turnUpdate", connectedClients[currentTurnIndex]);
-        }
-    });
+    // Game state - encapsulated per server instance
+    let connectedClients = [];
+    let isInGame = false;
+    let storedMessages = [];
+    let currentTurnIndex = 0;
 
-    socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
+    function getRandomBeginning() {
+        const randomIndex = Math.floor(Math.random() * gameBeginnings.length);
+        return gameBeginnings[randomIndex];
+    }
 
-        // Find the index before removing
-        const disconnectedIndex = connectedClients.indexOf(socket.id);
+    function getPlayerCount() {
+        return connectedClients.length;
+    }
 
-        // Remove the disconnected client from the array
-        connectedClients = connectedClients.filter((client) => client !== socket.id);
+    // Exported getters for testing
+    function getGameState() {
+        return {
+            connectedClients: [...connectedClients],
+            isInGame,
+            storedMessages: [...storedMessages],
+            currentTurnIndex
+        };
+    }
 
-        // If the game is in progress and the disconnected player was before or at current turn
-        if (isInGame && connectedClients.length > 0) {
-            // Adjust turn index if needed
-            if (disconnectedIndex <= currentTurnIndex) {
-                currentTurnIndex = Math.max(0, currentTurnIndex - 1);
-            }
-            // Make sure currentTurnIndex is valid
-            currentTurnIndex = currentTurnIndex % connectedClients.length;
-            io.emit("turnUpdate", connectedClients[currentTurnIndex]);
-        }
+    function resetGameState() {
+        connectedClients = [];
+        isInGame = false;
+        storedMessages = [];
+        currentTurnIndex = 0;
+    }
 
-        // End game if not enough players
-        if (isInGame && connectedClients.length < 2) {
-            isInGame = false;
-            io.emit("systemMessage", "Game ended - not enough players remaining");
-            io.emit("gameFinish");
-            io.emit("activateStartButton");
-            storedMessages = [];
-        }
+    io.on("connection", (socket) => {
+        console.log("User connected:", socket.id);
 
-        console.log("Player Count:", getPlayerCount());
+        // Add the newly connected client to the array
+        connectedClients.push(socket.id);
+
         // Broadcast the updated player count to all clients
         io.emit("playerCount", getPlayerCount());
         io.emit("connectedClients", connectedClients);
+
+        socket.on("startGame", () => {
+            console.log("Received startGame signal");
+            if (getPlayerCount() >= 3 && !isInGame) {
+                console.log("Starting the game");
+
+                const randomBeginning = getRandomBeginning();
+                currentTurnIndex = 0;
+
+                io.emit("systemMessage", "GAME STARTED!");
+                io.emit("systemMessage", randomBeginning);
+                io.emit("turnUpdate", connectedClients[currentTurnIndex]);
+                io.emit("deactivateStartButton");
+                isInGame = true;
+                io.emit("gameStart");
+            } else {
+                console.log("Not enough players or the game is already in progress");
+                socket.emit("alert", "Not enough players (need 3+) or the game is already in progress.");
+            }
+        });
+
+        socket.on("endTurn", () => {
+            if (isInGame && connectedClients.length > 0) {
+                currentTurnIndex = (currentTurnIndex + 1) % connectedClients.length;
+                io.emit("turnUpdate", connectedClients[currentTurnIndex]);
+            }
+        });
+
+        socket.on("disconnect", () => {
+            console.log("User disconnected:", socket.id);
+
+            // Find the index before removing
+            const disconnectedIndex = connectedClients.indexOf(socket.id);
+
+            // Remove the disconnected client from the array
+            connectedClients = connectedClients.filter((client) => client !== socket.id);
+
+            // If the game is in progress and the disconnected player was before or at current turn
+            if (isInGame && connectedClients.length > 0) {
+                // Adjust turn index if needed
+                if (disconnectedIndex <= currentTurnIndex) {
+                    currentTurnIndex = Math.max(0, currentTurnIndex - 1);
+                }
+                // Make sure currentTurnIndex is valid
+                currentTurnIndex = currentTurnIndex % connectedClients.length;
+                io.emit("turnUpdate", connectedClients[currentTurnIndex]);
+            }
+
+            // End game if not enough players
+            if (isInGame && connectedClients.length < 2) {
+                isInGame = false;
+                io.emit("systemMessage", "Game ended - not enough players remaining");
+                io.emit("gameFinish");
+                io.emit("activateStartButton");
+                storedMessages = [];
+            }
+
+            console.log("Player Count:", getPlayerCount());
+            // Broadcast the updated player count to all clients
+            io.emit("playerCount", getPlayerCount());
+            io.emit("connectedClients", connectedClients);
+        });
+
+        socket.on("message", (data) => {
+            const validated = validateMessage(data);
+            if (!validated) {
+                console.log("Invalid message received, ignoring");
+                return;
+            }
+
+            const { playerName, message } = validated;
+
+            if (isInGame) {
+                // Store the message for end-game display
+                storedMessages.push({ playerName, message });
+                console.log("Stored Messages:", storedMessages.length);
+            }
+
+            const senderSocketId = socket.id;
+            io.emit("message", { playerName, message, senderSocketId });
+        });
+
+        socket.on("finishGame", () => {
+            if (isInGame) {
+                console.log("Finishing the game");
+                isInGame = false;
+
+                // Emit a system message and finish game signal
+                io.emit("systemMessage", "THE END");
+                io.emit("gameFinish");
+                io.emit("enableSubmit");
+
+                // Emit a signal with the stored messages
+                io.emit("displayStoredMessages", storedMessages);
+
+                // Clear the stored messages for the next game
+                storedMessages = [];
+                currentTurnIndex = 0;
+            }
+        });
+
+        // Event listener for deactivating the "Start Game" button on all clients
+        socket.on("deactivateStartButton", () => {
+            io.emit("deactivateStartButton");
+        });
+
+        socket.on("activateStartButton", () => {
+            io.emit("activateStartButton");
+        });
+
+        // Error handling for socket
+        socket.on("error", (err) => {
+            console.error("Socket error:", err);
+        });
     });
 
-    socket.on("message", (data) => {
-        const validated = validateMessage(data);
-        if (!validated) {
-            console.log("Invalid message received, ignoring");
-            return;
-        }
+    return {
+        app,
+        httpServer,
+        io,
+        getGameState,
+        resetGameState,
+        getPlayerCount
+    };
+}
 
-        const { playerName, message } = validated;
+// Only start the server if this is the main module (not imported for testing)
+const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 
-        if (isInGame) {
-            // Store the message for end-game display
-            storedMessages.push({ playerName, message });
-            console.log("Stored Messages:", storedMessages.length);
-        }
+if (isMainModule) {
+    const { httpServer } = createGameServer();
+    const port = process.env.PORT || 3000;
 
-        const senderSocketId = socket.id;
-        io.emit("message", { playerName, message, senderSocketId });
+    httpServer.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
     });
 
-    socket.on("finishGame", () => {
-        if (isInGame) {
-            console.log("Finishing the game");
-            isInGame = false;
-
-            // Emit a system message and finish game signal
-            io.emit("systemMessage", "THE END");
-            io.emit("gameFinish");
-            io.emit("enableSubmit");
-
-            // Emit a signal with the stored messages
-            io.emit("displayStoredMessages", storedMessages);
-
-            // Clear the stored messages for the next game
-            storedMessages = [];
-            currentTurnIndex = 0;
-        }
+    // Graceful shutdown
+    process.on("SIGTERM", () => {
+        console.log("SIGTERM received, shutting down gracefully");
+        httpServer.close(() => {
+            console.log("Server closed");
+            process.exit(0);
+        });
     });
 
-    // Event listener for deactivating the "Start Game" button on all clients
-    socket.on("deactivateStartButton", () => {
-        io.emit("deactivateStartButton");
+    process.on("SIGINT", () => {
+        console.log("SIGINT received, shutting down gracefully");
+        httpServer.close(() => {
+            console.log("Server closed");
+            process.exit(0);
+        });
     });
-
-    socket.on("activateStartButton", () => {
-        io.emit("activateStartButton");
-    });
-
-    // Error handling for socket
-    socket.on("error", (err) => {
-        console.error("Socket error:", err);
-    });
-});
-
-const port = process.env.PORT || 3000;
-
-httpServer.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
-
-// Graceful shutdown
-process.on("SIGTERM", () => {
-    console.log("SIGTERM received, shutting down gracefully");
-    httpServer.close(() => {
-        console.log("Server closed");
-        process.exit(0);
-    });
-});
-
-process.on("SIGINT", () => {
-    console.log("SIGINT received, shutting down gracefully");
-    httpServer.close(() => {
-        console.log("Server closed");
-        process.exit(0);
-    });
-});
+}
