@@ -1,4 +1,36 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // HTML escape function to prevent XSS attacks
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Helper to create safe message elements
+    function createMessageElement(name, message, className = '') {
+        const li = document.createElement('li');
+        li.className = `lead ${className}`.trim();
+
+        const strong = document.createElement('strong');
+        strong.textContent = name + ':';
+
+        li.appendChild(strong);
+        li.appendChild(document.createTextNode(' ' + message));
+        return li;
+    }
+
+    // Helper to create system message elements
+    function createSystemMessage(message) {
+        const li = document.createElement('li');
+        li.className = 'system-message lead';
+
+        const strong = document.createElement('strong');
+        strong.textContent = message;
+
+        li.appendChild(strong);
+        return li;
+    }
+
     const playerName = Cookies.get('playerName');
     if (!playerName) {
         alert("Player name is missing. Redirecting to the main page.");
@@ -8,7 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const welcomeMessage = document.getElementById('welcomeMessage');
     welcomeMessage.textContent = `Greetings, ${playerName}!`;
 
-    const socket = io('http://localhost:8080');
+    // Connect to the same host (works for both development and production)
+    const socket = io();
     const input = document.getElementById('chat-input');
     const button = document.getElementById('submit');
     const messages = document.getElementById('messages');
@@ -21,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let connectedClients = [];
     let playerIndex = -1;
 
-    button.onclick = () => {
+    function sendMessage() {
         const message = input.value.trim();
         if (message !== "") {
             if (isInGame && playerTurn === socket.id) {
@@ -30,13 +63,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 input.value = "";
                 // Notify the server that the current player's turn is over
                 socket.emit("endTurn");
-            } else {
-                // If not in game or not the player's turn, treat messages as regular chat
+            } else if (!isInGame) {
+                // If not in game, treat messages as regular chat
                 socket.emit("message", { playerName, message });
                 input.value = "";
             }
         }
-    };
+    }
+
+    button.onclick = sendMessage;
+
+    // Allow Enter key to send messages
+    input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !input.disabled) {
+            sendMessage();
+        }
+    });
 
     startButton.onclick = () => {
         // Emit a signal to the server to start the game
@@ -81,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isMessageFromCurrentPlayer) {
             // Display messages from the current player as coming from "You"
-            messages.innerHTML += `<li class="lead"><strong>You:</strong> ${message}</li>`;
+            messages.appendChild(createMessageElement('You', message));
         } else if (isInGame) {
             // Calculate the index of the previous player in the connectedClients array
             const previousPlayerIndex = (playerIndex - 1 + connectedClients.length) % connectedClients.length;
@@ -90,15 +132,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (isMessageFromPreviousPlayer) {
                 // Display messages from the previous player without masking
-                messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${message}</li>`;
+                messages.appendChild(createMessageElement(playerName, message));
             } else {
                 // Mask the message from other players with stars
-                const maskedMessage = Array(message.length + 1).join('*');
-                messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${maskedMessage}</li>`;
+                const maskedMessage = '*'.repeat(message.length);
+                messages.appendChild(createMessageElement(playerName, maskedMessage));
             }
         } else {
             // If not in game, display all messages without masking
-            messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${message}</li>`;
+            messages.appendChild(createMessageElement(playerName, message));
         }
         scrollToBottom();
     });
@@ -111,24 +153,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Event listener for receiving turn information from the server
 
+    // Track current alert to prevent memory leaks
+    let currentTurnAlert = null;
+
     socket.on("turnUpdate", (turn) => {
         playerTurn = turn;
+
+        // Remove previous alert if exists
+        if (currentTurnAlert) {
+            currentTurnAlert.remove();
+            currentTurnAlert = null;
+        }
+
         if (turn === socket.id) {
             const alertContainer = document.createElement("div");
             alertContainer.className = "alert alert-info fade show fixed-top";
-            alertContainer.innerHTML = "It's your turn!";
-    
+            alertContainer.textContent = "It's your turn!";
             document.body.appendChild(alertContainer);
-    
+            currentTurnAlert = alertContainer;
+
             // In-game button/input rules
             input.disabled = false;
             button.disabled = false;
             startButton.disabled = true;
-    
-            // Event listener for submit button to close the "It's your turn!" alert
-            document.getElementById("submit").addEventListener("click", () => {
-                alertContainer.remove(); // Use the remove() method
-            });
         } else {
             input.disabled = true;
             button.disabled = true;
@@ -136,17 +183,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Single event listener for submit button to close turn alert
+    button.addEventListener("click", () => {
+        if (currentTurnAlert) {
+            currentTurnAlert.remove();
+            currentTurnAlert = null;
+        }
+    });
+
     // Event listener for displaying stored messages
     socket.on('displayStoredMessages', (storedMessages) => {
-
         storedMessages.forEach(({ playerName, message }) => {
-            messages.innerHTML += `<li class="lead"><strong>${playerName}:</strong> ${message}</li>`;
+            messages.appendChild(createMessageElement(playerName, message));
         });
         scrollToBottom();
     });
 
     socket.on("systemMessage", (message) => {
-        messages.innerHTML += `<li class="system-message lead"><strong>${message}</li></strong>`;
+        messages.appendChild(createSystemMessage(message));
         scrollToBottom();
     });
 
@@ -171,5 +225,22 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(message);
         startButton.disabled = false;
         finishButton.disabled = false;
+    });
+
+    // Connection error handling
+    socket.on("connect_error", (err) => {
+        console.error("Connection error:", err);
+        messages.appendChild(createSystemMessage("Connection error - trying to reconnect..."));
+        scrollToBottom();
+    });
+
+    socket.on("disconnect", (reason) => {
+        console.log("Disconnected:", reason);
+        messages.appendChild(createSystemMessage("Disconnected from server"));
+        scrollToBottom();
+    });
+
+    socket.on("connect", () => {
+        console.log("Connected to server");
     });
 });
